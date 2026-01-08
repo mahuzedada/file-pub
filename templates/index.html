@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Pub - VPC Testing Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .upload-form {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stats-icon {
+            font-size: 2rem;
+        }
+
+        .stats-text {
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .stats-number {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .image-container {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover .image-container img {
+            transform: scale(1.05);
+        }
+
+        .image-info {
+            padding: 20px;
+        }
+
+        .image-title {
+            color: #333;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+
+        .image-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .meta-label {
+            font-weight: 500;
+        }
+
+        .meta-value {
+            color: #999;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 30px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .upload-form {
+                flex-direction: column;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>File Pub</h1>
+            <p class="subtitle">VPC Testing Application - Public Image Upload & Gallery</p>
+        </header>
+
+        <div class="upload-section">
+            <h2>Upload Image</h2>
+            <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+                <div class="form-group">
+                    <label for="image">Choose an image (JPEG, PNG, GIF, WebP)</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                </div>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        {{if gt .Count 0}}
+        <div class="stats">
+            <div class="stats-icon">📊</div>
+            <div class="stats-text">
+                Total Images: <span class="stats-number">{{.Count}}</span>
+            </div>
+        </div>
+
+        <div class="gallery">
+            {{range .Images}}
+            <div class="image-card">
+                <div class="image-container">
+                    <img src="{{.S3URL}}" alt="{{.OriginalName}}" loading="lazy">
+                </div>
+                <div class="image-info">
+                    <div class="image-title">{{.OriginalName}}</div>
+                    <div class="image-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Type:</span>
+                            <span class="meta-value">{{.ContentType}}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Size:</span>
+                            <span class="meta-value">{{.Size}} bytes</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Uploaded:</span>
+                            <span class="meta-value">{{.UploadedAt.Format "2006-01-02 15:04:05"}}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">ID:</span>
+                            <span class="meta-value">{{.ID}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="empty-state">
+            <div class="empty-state-icon">📷</div>
+            <h3>No Images Yet</h3>
+            <p>Upload your first image to get started!</p>
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>

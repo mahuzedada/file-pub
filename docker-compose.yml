@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: filepub-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: devpassword
+      MYSQL_DATABASE: filepub
+      MYSQL_USER: devuser
+      MYSQL_PASSWORD: devpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdevpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - filepub-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: filepub-app-dev
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: devuser
+      DB_PASSWORD: devpassword
+      DB_NAME: filepub
+      S3_BUCKET: ${DEV_S3_BUCKET}
+      S3_REGION: ${DEV_S3_REGION:-us-east-1}
+      PORT: 8080
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - filepub-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  filepub-network:
+    driver: bridge
