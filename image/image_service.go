@@ -90,7 +90,6 @@ func (service *imageService) UploadImage(ctx context.Context, file io.Reader, fi
 		Key:         aws.String(s3Key),
 		Body:        file,
 		ContentType: aws.String(contentType),
-		ACL:         aws.String("public-read"),
 	})
 	if err != nil {
 		return nil, common.WrapS3Error("upload", service.s3Bucket, s3Key, err)

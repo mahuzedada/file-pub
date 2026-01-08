@@ -313,8 +313,7 @@ Create IAM role with policies:
       "Effect": "Allow",
       "Action": [
         "s3:PutObject",
-        "s3:GetObject",
-        "s3:PutObjectAcl"
+        "s3:GetObject"
       ],
       "Resource": "arn:aws:s3:::your-bucket-name/*"
     },
@@ -330,6 +329,34 @@ Create IAM role with policies:
 ```
 
 Attach this role to EC2 instance.
+
+#### 5. S3 Bucket Policy
+
+Configure your S3 bucket to allow public read access to uploaded images. This replaces the deprecated ACL approach.
+
+In the AWS Console, go to your S3 bucket → Permissions → Bucket Policy and add:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/uploads/*"
+    }
+  ]
+}
+```
+
+**Important Notes:**
+- Replace `your-bucket-name` with your actual bucket name
+- This policy allows public read access only to objects in the `uploads/` folder
+- Ensure "Block all public access" is configured to allow this policy:
+  - Uncheck "Block public access to buckets and objects granted through new public bucket or access point policies"
+  - Or use the AWS CLI: `aws s3api put-public-access-block --bucket your-bucket-name --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=false,RestrictPublicBuckets=false"`
 
 ## Testing Checklist for Students
 
