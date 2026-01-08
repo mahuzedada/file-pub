@@ -18,8 +18,10 @@ if [ ! -f .env.dev ]; then
     exit 1
 fi
 
-# Source the dev environment
+# Source the dev environment (export all variables)
+set -a
 source .env.dev
+set +a
 
 echo "Step 1: Checking configuration..."
 if [ -z "$S3_BUCKET" ]; then
