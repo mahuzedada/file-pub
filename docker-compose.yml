@@ -31,7 +31,7 @@ services:
       DB_USER: devuser
       DB_PASSWORD: devpassword
       DB_NAME: filepub
-      S3_BUCKET: ${DEV_S3_BUCKET}
+      S3_BUCKET: ${DEV_S3_BUCKET:-}
       S3_REGION: ${DEV_S3_REGION:-us-east-1}
       PORT: 8080
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}

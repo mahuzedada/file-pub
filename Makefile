@@ -115,12 +115,22 @@ dev-down:
 	@echo "Stopping Docker services..."
 	docker-compose down
 
-dev-run: dev-up
+dev-run:
 	@echo "Running application in development mode..."
 	@if [ ! -f .env.dev ]; then \
 		echo "Error: .env.dev not found"; \
 		exit 1; \
 	fi
+	@echo "Checking if MySQL is running..."
+	@if ! docker ps | grep -q filepub-mysql-dev; then \
+		echo "MySQL not running. Starting it now..."; \
+		docker-compose up -d mysql; \
+		echo "Waiting for MySQL to be ready..."; \
+		sleep 5; \
+	else \
+		echo "MySQL is already running."; \
+	fi
+	@echo "Starting application..."
 	@export $$(cat .env.dev | grep -v '^#' | xargs) && go run main.go
 
 dev-logs:
