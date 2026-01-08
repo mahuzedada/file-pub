@@ -41,6 +41,7 @@ func main() {
 	// Setup routes
 	http.HandleFunc("/", app.ImageHandler.HandleHome)
 	http.HandleFunc("/upload", app.ImageHandler.HandleUpload)
+	http.HandleFunc("/image/", app.ImageHandler.HandleImageProxy)
 	http.HandleFunc("/health", app.handleHealth)
 
 	log.Printf("Server starting on port %s", config.Port)
@@ -109,6 +110,7 @@ func initApp(config Config) (*App, error) {
 
 	s3Client := s3.New(sess)
 	uploader := s3manager.NewUploader(sess)
+	downloader := s3manager.NewDownloader(sess)
 
 	// Parse templates
 	templates, err := template.ParseGlob("templates/*.html")
@@ -118,7 +120,7 @@ func initApp(config Config) (*App, error) {
 
 	// Initialize domain services
 	imageRepo := image.NewImageRepository(db)
-	imageService := image.NewImageService(imageRepo, uploader, config.S3Bucket)
+	imageService := image.NewImageService(imageRepo, uploader, downloader, config.S3Bucket)
 	imageHandler := image.NewImageHandler(imageService, templates)
 
 	return &App{

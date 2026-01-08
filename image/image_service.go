@@ -10,6 +10,7 @@ import (
 	"file-pub/internal/common"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
 )
@@ -28,26 +29,30 @@ var (
 // ImageService defines the interface for image business logic
 type ImageService interface {
 	GetAllImages(ctx context.Context) ([]ImageMetadata, error)
+	GetImageData(ctx context.Context, id string) ([]byte, string, error)
 	UploadImage(ctx context.Context, file io.Reader, filename, contentType string, size int64) (*ImageMetadata, error)
 	ValidateImageType(contentType string) error
 }
 
 // imageService implements ImageService
 type imageService struct {
-	imageRepo ImageRepository
-	uploader  *s3manager.Uploader
-	s3Bucket  string
+	imageRepo  ImageRepository
+	uploader   *s3manager.Uploader
+	downloader *s3manager.Downloader
+	s3Bucket   string
 }
 
 // NewImageService creates a new ImageService
 func NewImageService(
 	imageRepo ImageRepository,
 	uploader *s3manager.Uploader,
+	downloader *s3manager.Downloader,
 	s3Bucket string,
 ) ImageService {
 	common.PanicOnInvalidDependencies("ImageService", map[string]interface{}{
-		"imageRepo": imageRepo,
-		"uploader":  uploader,
+		"imageRepo":  imageRepo,
+		"uploader":   uploader,
+		"downloader": downloader,
 	})
 
 	if err := common.ValidateNonEmptyString(s3Bucket, "s3Bucket"); err != nil {
@@ -55,9 +60,10 @@ func NewImageService(
 	}
 
 	return &imageService{
-		imageRepo: imageRepo,
-		uploader:  uploader,
-		s3Bucket:  s3Bucket,
+		imageRepo:  imageRepo,
+		uploader:   uploader,
+		downloader: downloader,
+		s3Bucket:   s3Bucket,
 	}
 }
 
@@ -69,6 +75,27 @@ func (service *imageService) GetAllImages(ctx context.Context) ([]ImageMetadata,
 	}
 
 	return images, nil
+}
+
+// GetImageData retrieves image data from S3 by ID
+func (service *imageService) GetImageData(ctx context.Context, id string) ([]byte, string, error) {
+	// Get image metadata from database
+	metadata, err := service.imageRepo.GetImageByID(ctx, id)
+	if err != nil {
+		return nil, "", fmt.Errorf("getting image metadata: %w", err)
+	}
+
+	// Download image from S3
+	buffer := aws.NewWriteAtBuffer([]byte{})
+	_, err = service.downloader.DownloadWithContext(ctx, buffer, &s3.GetObjectInput{
+		Bucket: aws.String(service.s3Bucket),
+		Key:    aws.String(metadata.S3Key),
+	})
+	if err != nil {
+		return nil, "", common.WrapS3Error("download", service.s3Bucket, metadata.S3Key, err)
+	}
+
+	return buffer.Bytes(), metadata.ContentType, nil
 }
 
 // UploadImage uploads an image to S3 and saves metadata to database

@@ -108,3 +108,36 @@ func (handler *ImageHandler) HandleUpload(w http.ResponseWriter, r *http.Request
 	// Redirect back to home
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
+
+// HandleImageProxy serves images from S3 through the application
+func (handler *ImageHandler) HandleImageProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract image ID from URL path
+	// Expected format: /image/{id}
+	id := r.URL.Path[len("/image/"):]
+	if id == "" {
+		http.Error(w, "Image ID required", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch image data from S3
+	imageData, contentType, err := handler.imageService.GetImageData(r.Context(), id)
+	if err != nil {
+		log.Printf("Error fetching image %s: %v", id, err)
+		http.Error(w, "Image not found", http.StatusNotFound)
+		return
+	}
+
+	// Set headers
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
+
+	// Write image data
+	if _, err := w.Write(imageData); err != nil {
+		log.Printf("Error writing image response: %v", err)
+	}
+}
