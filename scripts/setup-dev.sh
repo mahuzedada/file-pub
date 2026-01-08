@@ -10,23 +10,37 @@ echo "File Pub - Development Setup"
 echo "==================================="
 echo ""
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="$PROJECT_ROOT/.env.dev"
+
 # Check if .env.dev exists
-if [ ! -f .env.dev ]; then
-    echo "Error: .env.dev file not found"
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Error: .env.dev file not found at $ENV_FILE"
     echo "Please copy .env.dev template and configure it:"
     echo "  cp .env.dev.example .env.dev"
     exit 1
 fi
 
 # Source the dev environment (export all variables)
+echo "Loading environment from: $ENV_FILE"
 set -a
-source .env.dev
+source "$ENV_FILE"
 set +a
 
 echo "Step 1: Checking configuration..."
+echo "DEBUG: S3_BUCKET='$S3_BUCKET'"
+echo "DEBUG: Shell: $SHELL"
+echo "DEBUG: Bash version: $BASH_VERSION"
+
 if [ -z "$S3_BUCKET" ]; then
+    echo ""
     echo "Error: S3_BUCKET not set in .env.dev"
-    echo "Please set S3_BUCKET to your existing S3 bucket name"
+    echo "Please check that .env.dev contains: S3_BUCKET=your-bucket-name"
+    echo ""
+    echo "Contents of .env.dev:"
+    grep -E "^S3_BUCKET=" "$ENV_FILE" || echo "  (S3_BUCKET not found in file)"
     exit 1
 fi
 
