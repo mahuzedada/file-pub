@@ -236,6 +236,88 @@
             font-size: 1.1rem;
         }
 
+        .upload-progress {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-progress h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .upload-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .upload-item {
+            background: #f8f9ff;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .upload-item.success {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .upload-item.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .upload-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .upload-item-name {
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .upload-item-status {
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .upload-item-status.uploading {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .upload-item-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .upload-item-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .upload-item-message {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .upload-item.error .upload-item-message {
+            color: #991b1b;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -268,13 +350,19 @@
 
         <div class="upload-section">
             <h2>Upload Image</h2>
-            <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form">
+            <form action="/upload" method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
                 <div class="form-group">
-                    <label for="image">Choose an image (JPEG, PNG, GIF, WebP)</label>
-                    <input type="file" id="image" name="image" accept="image/*" required>
+                    <label for="image">Choose image(s) (JPEG, PNG, GIF, WebP)</label>
+                    <input type="file" id="image" name="image" accept="image/*" multiple required>
                 </div>
                 <button type="submit">Upload</button>
             </form>
+        </div>
+
+        <!-- Upload Progress Section -->
+        <div id="uploadProgress" class="upload-progress" style="display: none;">
+            <h2>Upload Progress</h2>
+            <div id="uploadList" class="upload-list"></div>
         </div>
 
         {{if gt .Count 0}}
@@ -323,5 +411,108 @@
         </div>
         {{end}}
     </div>
+
+    <script>
+        // Handle multiple file uploads
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('image');
+            const files = fileInput.files;
+
+            if (files.length === 0) {
+                alert('Please select at least one file');
+                return;
+            }
+
+            // Show progress section
+            const progressSection = document.getElementById('uploadProgress');
+            const uploadList = document.getElementById('uploadList');
+            progressSection.style.display = 'block';
+            uploadList.innerHTML = '';
+
+            // Create upload items for each file
+            const uploadPromises = Array.from(files).map(file => {
+                return uploadFile(file, uploadList);
+            });
+
+            // Wait for all uploads to complete
+            const results = await Promise.allSettled(uploadPromises);
+
+            // Check if all uploads succeeded
+            const allSucceeded = results.every(result => result.status === 'fulfilled' && result.value === true);
+
+            if (allSucceeded) {
+                // Reload page to show new images after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                // Some uploads failed, keep the progress visible
+                console.log('Some uploads failed');
+            }
+        });
+
+        async function uploadFile(file, uploadList) {
+            // Create upload item UI
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'upload-item';
+            itemDiv.innerHTML = `
+                <div class="upload-item-header">
+                    <div class="upload-item-name">${escapeHtml(file.name)}</div>
+                    <div class="upload-item-status uploading">Uploading...</div>
+                </div>
+                <div class="upload-item-message">${formatFileSize(file.size)}</div>
+            `;
+            uploadList.appendChild(itemDiv);
+
+            // Create form data
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok || response.redirected) {
+                    // Success
+                    itemDiv.className = 'upload-item success';
+                    itemDiv.querySelector('.upload-item-status').className = 'upload-item-status success';
+                    itemDiv.querySelector('.upload-item-status').textContent = 'Success';
+                    itemDiv.querySelector('.upload-item-message').textContent = 'Upload completed successfully';
+                    return true;
+                } else {
+                    // Error
+                    const errorText = await response.text();
+                    itemDiv.className = 'upload-item error';
+                    itemDiv.querySelector('.upload-item-status').className = 'upload-item-status error';
+                    itemDiv.querySelector('.upload-item-status').textContent = 'Failed';
+                    itemDiv.querySelector('.upload-item-message').textContent = errorText || 'Upload failed';
+                    return false;
+                }
+            } catch (error) {
+                // Network error
+                itemDiv.className = 'upload-item error';
+                itemDiv.querySelector('.upload-item-status').className = 'upload-item-status error';
+                itemDiv.querySelector('.upload-item-status').textContent = 'Failed';
+                itemDiv.querySelector('.upload-item-message').textContent = 'Network error: ' + error.message;
+                return false;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+    </script>
 </body>
 </html>
